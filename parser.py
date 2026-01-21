@@ -17,3 +17,9 @@ response = requests.get(user_event_str)
 response.raise_for_status() # In case we get a bad request
 
 events_data = response.json()
+
+# Print first 5 events
+for e in events_data[:5]:
+    event_type = e.get('type', 'Unknown')
+    repo_name = e.get('repo', {}).get('name', 'Unknown')
+    print(f"{event_type} in {repo_name}")
