@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 from streamlit_option_menu import option_menu
 
-#basic page configuration function 
+#page configuration function 
 st.set_page_config(
     page_title="Manager dashboard",
     page_icon="🧊",
@@ -29,6 +29,5 @@ with st.sidebar:
         icons=["Activity","house-heart-fill","calendar2-heart-fill","6-square-fill","align-bottom","alexa"],
         menu_icon="cake",
         default_index=0
-        
     )
     
