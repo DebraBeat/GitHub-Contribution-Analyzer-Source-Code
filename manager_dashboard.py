@@ -21,13 +21,16 @@ st.set_page_config(
 )
 st.title("Manager dashboard")
 
-#side bar option menu 
-with st.sidebar:
-    selected=option_menu(
-        menu_title="git operations",
-        options=["Create New Section","Edit Section","list all sections","Edit user Info","Analyze repo"],
-        icons=["Activity","house-heart-fill","calendar2-heart-fill","6-square-fill","align-bottom","alexa"],
-        menu_icon="cake",
-        default_index=0
-    )
+
+pages = [
+    st.Page("manager_pages/pg_analyze_repo.py", title="Analyze repository", icon=None),
+    st.Page("manager_pages/pg_create_new_section.py", title="Create a new section", icon=None),
+    st.Page("manager_pages/pg_list_sections.py", title="List all Sections", icon=None),
+    st.Page("manager_pages/pg_edit_section.py", title="Edit section", icon=None),
+    st.Page("manager_pages/pg_edit_user_info.py", title="Edit user info", icon=None),
+]
+
+pg = st.navigation(pages, position="sidebar", expanded= True)
+pg.run()
+
     
