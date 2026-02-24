@@ -2,40 +2,105 @@ import requests
 from datetime import datetime
 from pprint import pprint
 
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-}
+def get_commit_from_name(username: str, n: int) -> dict[int, dict]:
+    """
+    Retrieve the last `n` commits from a user's GitHub profile.
+    
+    This function fetches commit history from GitHub's API for the specified
+    username and returns the most recent commits with their metadata.
 
-username = input("Input github username: ")
-user_event_str = f"https://api.github.com/users/{username}/events"
+    Args:
+        username (str): GitHub username. Should be sanitized to remove any
+            special characters or whitespace before processing.
+        n (int): Number of most recent commits to retrieve. Must be positive
+            and not exceed the maximum allowed limit (currently 100).
 
-response = requests.get(user_event_str, headers=headers) # Added headers here just in case
-response.raise_for_status()
+    Returns:
+        dict[int, dict]: A dictionary where:
+            - Keys (int): Commit index from most recent (0 = latest commit)
+            - Values (dict): Commit details containing:
+                - 'repo' (str): Repository name
+                - 'sha' (str): Commit SHA hash
+                - 'datetime' (str): ISO format timestamp of commit
+                - 'message' (str): Commit message
 
-events_data = response.json()
+    Raises:
+        TypeError: If `n` is not an integer.
+        ValueError: If:
+            - `n` is less than 1
+            - `n` exceeds the maximum allowed limit (currently 100)
+            - The username is invalid (empty, contains invalid characters)
 
-print(f"--- Commit History for {username} ---\n")
+    Example:
+        >>> commits = get_commit_from_name("octocat", 3)
+        >>> print(commits[0]['message'])
+        'Fix README typo'
+        >>> len(commits)
+        3
+    """
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
 
-for event in events_data[:5]: # Checking more than one in case the first isn't a push
-    if event['type'] == 'PushEvent':
-        created_at = datetime.strptime(event['created_at'], '%Y-%m-%dT%H:%M:%SZ')
-        repo_name = event['repo']['name']
-        
-        # Use 'head' as the commit SHA
-        commit_sha = event['payload'].get('head')
-        
-        if commit_sha:
-            # Construct the URL using the repo name provided in the event
-            commit_url = f"https://api.github.com/repos/{repo_name}/commits/{commit_sha}"
+    user_event_str = f"https://api.github.com/users/{username}/events"
+    results = {}
+    i: int = 0 # Integer to hold our iterations
+
+    response = requests.get(user_event_str, headers=headers) # Added headers here just in case
+    response.raise_for_status()
+
+    events_data = response.json()
+
+    for event in events_data[:n]: # Checking more than one in case the first isn't a push
+        # TODO: Add Pull event types
+        if event['type'] == 'PushEvent':
+            created_at = datetime.strptime(event['created_at'], '%Y-%m-%dT%H:%M:%SZ')
+            repo_name = event['repo']['name']
             
-            commit_res = requests.get(commit_url, headers=headers)
-            if commit_res.status_code == 200:
-                commit_data = commit_res.json()
+            # Use 'head' as the commit SHA
+            commit_sha = event['payload'].get('head')
+            
+            if commit_sha:
+                # Construct the URL using the repo name provided in the event
+                commit_url = f"https://api.github.com/repos/{repo_name}/commits/{commit_sha}"
                 
-                print(f"Repo:       {repo_name}")
-                print(f"SHA:        {commit_sha[:7]}") # Shortened for readability
-                print(f"datetime:   {created_at}")
-                print(f"Message:    {commit_data['commit']['message'].splitlines()[0]}")
-                print("-" * 40)
-            else:
-                print(f"Could not fetch commit details for {repo_name}")
+                commit_res = requests.get(commit_url, headers=headers)
+                if commit_res.status_code == 200:
+                    commit_data = commit_res.json()
+                    
+                    results[i] = {
+                        "Repo":     repo_name,
+                        "SHA":      commit_sha,
+                        "datetime": datetime,
+                        "Message":  commit_data['commit']['message'].splitlines()[0]
+                    }
+
+                else:
+                    # TODO: Evaluate how to properly handle this
+                    print(f"Could not fetch commit details for {repo_name}")
+
+    return results
+
+def check_n(n: int) -> None:
+    """
+    Validate n
+    """
+    if not isinstance(n, int):
+        raise TypeError(f"n must be an integer, got {type(n).__name__}")
+    
+    if n < 1:
+        raise ValueError(f"n must be positive, got {n}")
+    
+    # At the moment, let's define the maximum number of commits to be 20
+    if n > 20:
+        raise ValueError(f"n cannot exceed {20}, got {n}")
+
+def check_username(username: str) -> None:
+    """
+    Validate a given GitHub username
+    """
+    if not isinstance(username, str):
+        raise TypeError(f"username must be a string, got {type(username).__name__}")
+    
+    if not all(c.isalnum() or c == '-' for c in s):
+        raise ValueError(f"username is invalid")
