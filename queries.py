@@ -40,7 +40,6 @@ UserSection = db.Table(
 
 def createUserQuery(name, githubusername, job):
     stmt = insert(Users).values(Name=name, GitHubUsername=githubusername, Job=job)
-    compiled = stmt.compile()
     with pool.connect() as connection:
         result = connection.execute(stmt)
         connection.commit()
@@ -60,6 +59,15 @@ def searchUserQuery():
 def searchSectionQuery():
     print(6)
 
+def deleteUser(name, userid):
+    stmt = delete(Users).where(Users.c.Name == name, Users.c.UserID == userid)
+    with pool.connect() as connection:
+        result = connection.execute(stmt)
+        connection.commit()
+
+def deleteSection():
+    print(8)
+
 connecttodatabase()
 userInput = -1
 print("Welcome user")
@@ -73,16 +81,19 @@ while userInput != 0:
     "6) Search for a section\n" \
     "0) Exit Program\n"
     "Please input your action's number: "))
+    
     if userInput == 1:
         tempName = input("Input Name: ")
         tempGitHubUsername = input("Input GitHub Username: ")
         tempJob = input("Input Job Title: ")
+        
         try:
             print("Creating user...")
             createUserQuery(tempName, tempGitHubUsername, tempJob)
             print("User created")
         except:
             print("Error User not created properly")
+    
     elif userInput == 2:
         modifyUserquery()
     elif userInput == 3:
@@ -93,6 +104,19 @@ while userInput != 0:
         searchUserQuery()
     elif userInput == 6:
         searchSectionQuery()
+
+    elif userInput == 7:
+        tempName = input("Input Name: ")
+        tempID = input("Input UserID: ")
+        try:
+            print("Deleting user...")
+            deleteUser(tempName, tempID)
+            print("User deleted")
+        except:
+            print("Error User not deleted properly")
+            
+    elif userInput == 8:
+        deleteSection()
     elif userInput == 0:
         print("Exiting program...")
         break
