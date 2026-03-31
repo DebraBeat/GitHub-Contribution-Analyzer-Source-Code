@@ -28,7 +28,8 @@ Section = db.Table(
         'section',
         metadata_obj,
         db.Column('SectionID', db.Integer, primary_key=True, unique=True, autoincrement=True),
-        db.Column('RepoURL', db.String(255))
+        db.Column('RepoURL', db.String(255)),
+        db.Column('SectionName', db.String(255))
     )
 UserSection = db.Table(
         'usersection',
@@ -47,8 +48,11 @@ def createUserQuery(name, githubusername, job):
 def modifyUserquery():
     print(2)
 
-def createSectionQuery():
-    print(3)
+def createSectionQuery(repourl, sectionname):
+    stmt = insert(Section).values(RepoURL=repourl, SectionName = sectionname)
+    with pool.connect() as connection:
+        result = connection.execute(stmt)
+        connection.commit()
 
 def modifySectionQuery():
     print(4)
@@ -65,8 +69,11 @@ def deleteUser(name, userid):
         result = connection.execute(stmt)
         connection.commit()
 
-def deleteSection():
-    print(8)
+def deleteSection(sectionname, sectionid):
+    stmt = delete(Section).where(Section.c.SectionName == sectionname, Section.c.SectionID == sectionid)
+    with pool.connect() as connection:
+        result = connection.execute(stmt)
+        connection.commit()
 
 connecttodatabase()
 userInput = -1
@@ -92,12 +99,21 @@ while userInput != 0:
             createUserQuery(tempName, tempGitHubUsername, tempJob)
             print("User created")
         except:
-            print("Error User not created properly")
+            print("Error user not created properly")
     
     elif userInput == 2:
         modifyUserquery()
+
     elif userInput == 3:
-        createSectionQuery()
+        tempName = input("Input Section Name: ")
+        tempGitHubURL = input("Input GitHub URL: ")
+        try:
+            print("Creating section...")
+            createSectionQuery(tempGitHubURL, tempName)
+            print("Section created")
+        except:
+            print("Error section not created properly")
+    
     elif userInput == 4:
         modifySectionQuery()
     elif userInput == 5:
@@ -113,12 +129,21 @@ while userInput != 0:
             deleteUser(tempName, tempID)
             print("User deleted")
         except:
-            print("Error User not deleted properly")
-            
+            print("Error user not deleted properly")
+
     elif userInput == 8:
-        deleteSection()
+        tempName = input("Input Section Name: ")
+        tempID = input("Input SectionID: ")
+        try:
+            print("Deleting section...")
+            deleteSection(tempName, tempID)
+            print("Section deleted")
+        except:
+            print("Error section not deleted properly")
+    
     elif userInput == 0:
         print("Exiting program...")
         break
+    
     else:
         print("Invalid Response, please try again")
