@@ -4,6 +4,13 @@ first test for github-contribution-analyzer manager login home page
 installation needed:
 pip install streamlit
 pip install streamlit-option-menu
+
+to run code local:
+streamlit run your_script.py
+
+Need to use session_state or else streamlit wont,
+remember users actions. 
+"st."
 """
 
 #libraries and modules used
