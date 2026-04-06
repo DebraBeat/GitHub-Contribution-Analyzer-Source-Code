@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 from dataclasses import dataclass
 from textblob import TextBlob
+import pandas as pd
 
 # TODO: Turn this into a real class
 @dataclass
@@ -10,8 +11,27 @@ class GitHubCommit:
     sha: str
     timestamp: datetime
     message: str
-    polarity: float
-    subjectivity: float
+    polarity: float | None
+    subjectivity: float | None
+
+    def set_sentiment_analysis(self) -> None:
+        blob = TextBlob(self.message)
+
+        # Get the sentiment scores
+        sentiment = blob.sentiment
+
+        self.polarity = sentiment.polarity # Range: [-1.0, 1.0]
+        self.subjectivity = sentiment.subjectivity # Range: [0.0, 1.0]
+
+    def to_dict(self) -> dict:
+        return {
+            'repo':         self.repo,
+            'sha':          self.sha,
+            'timestamp':    self.timestamp,
+            'message':      self.message,
+            'polarity':     self.polarity,
+            'subjectivity': self.subjectivity
+        }
 
 # TODO: Implement this!
 class GitHubPull:
@@ -92,22 +112,13 @@ def get_commit_from_name(username: str, n: int) -> list[GitHubCommit]:
                     ))
 
                     # Assign polarity and subjectivity
-                    set_sentiment_analysis(results[-1])
+                    results[-1].set_sentiment_analysis()
 
                 else:
                     # TODO: Evaluate how to properly handle this
                     print(f"Could not fetch commit details for {repo_name}")
 
     return results
-
-def set_sentiment_analysis(commit: GitHubCommit) -> None:
-    blob = TextBlob(commit.message)
-
-    # Get the sentiment scores
-    sentiment = blob.sentiment
-
-    commit.polarity = sentiment.polarity # Range: [-1.0, 1.0]
-    commit.subjectivity = sentiment.subjectivity # Range: [0.0, 1.0]
 
 def check_n(n: int) -> None:
     """
@@ -130,5 +141,18 @@ def check_username(username: str) -> None:
     if not isinstance(username, str):
         raise TypeError(f"username must be a string, got {type(username).__name__}")
     
-    if not all(c.isalnum() or c == '-' for c in s):
+    if not all(c.isalnum() or c == '-' for c in username):
         raise ValueError(f"username is invalid")
+
+def to_pd(results: list[GitHubCommit]) -> pd.DataFrame:
+    """
+    Convert list of GitHubCommit instances to a dataframe
+    """
+    results_as_dict = []
+
+    for r in results:
+        results_as_dict.append(
+            r.to_dict()
+        )
+
+    return pd.DataFrame(results_as_dict)
