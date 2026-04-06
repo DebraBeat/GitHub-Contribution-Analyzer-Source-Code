@@ -33,6 +33,10 @@ UserSection = db.Table(
         db.Column('SectionID', db.Integer, db.ForeignKey("section.SectionID"), nullable=False),
         db.Column('UserID', db.Integer, db.ForeignKey("users.UserID"), nullable=False),
     )
+
+#A generic function to commit queries to the main database via the connection.
+#Is meant to be used for basic queries that do not return any values. 
+#If they return something, create a special commit statement procedure in that function.
 def commitStatement(stmt):
     with pool.connect() as connection:
         result = connection.execute(stmt)
@@ -89,8 +93,16 @@ def printUserInfo(rows):
     for row in rows:
         print(f"Name: {row[1]}\nUserID: {row[0]}\nGitHub Username: {row[2]}\nJob Title: {row[3]}\n")
 
-def searchSectionQuery():
-    print(6)
+def searchSectionQuery(sectionname):
+    stmt = select(Section).where(Section.c.SectionName == sectionname)
+    rows = []
+    #Execute the statement to the cloud database
+    with pool.connect() as connection:
+        for row in connection.execute(stmt):
+            #Add all entries that have that name to the rows array
+            rows.append(row._t)
+    #Return all entries for later use
+    return rows
 
 #Delete row entries in tables queries
 def deleteUser(name, userid):
@@ -98,6 +110,7 @@ def deleteUser(name, userid):
     commitStatement(stmt)
     stmt = delete(Login).where(Login.c.UserID == userid)
     commitStatement(stmt)
+
 def deleteSection(sectionname, sectionid):
     stmt = delete(Section).where(Section.c.SectionName == sectionname, Section.c.SectionID == sectionid)
     commitStatement(stmt)
@@ -105,9 +118,11 @@ def deleteSection(sectionname, sectionid):
 def addUserToSection(userid, sectionid):
     stmt = insert(UserSection).values(UserID=userid, SectionID=sectionid)
     commitStatement(stmt)
+
 def deleteUserSection(userid, sectionid):
     stmt = delete(UserSection).where(UserID=userid, SectionID=sectionid)
     commitStatement(stmt)
+
 #Tester code to ensure all functions work before integration into the program.
 def tester():
     connecttodatabase()
