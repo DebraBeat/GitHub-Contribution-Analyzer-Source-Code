@@ -73,14 +73,20 @@ def get_user_activity(username: str, pages: int = 2) -> list[GitHubCommit]:
     Fetches recent PushEvents for a user. Best for Histograms, Word Clouds, and Sentiment.
     """
     results = []
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
     
     for page in range(1, pages + 1):
         url = f"https://api.github.com/users/{username}/events/public?per_page=100&page={page}"
         response = requests.get(url, headers=HEADERS)
         
+        # --- NEW ERROR HANDLING ---
         if response.status_code != 200:
-            print(f"Failed to fetch data for {username}: {response.text}")
-            break
+            error_msg = response.json().get('message', 'Unknown Error')
+            # Instead of printing to terminal, we force the app to stop and show the error!
+            raise Exception(f"GitHub API Error ({response.status_code}): {error_msg}")
+        # --------------------------
             
         events = response.json()
         if not events:
@@ -88,26 +94,39 @@ def get_user_activity(username: str, pages: int = 2) -> list[GitHubCommit]:
             
         for event in events:
             if event['type'] == 'PushEvent':
+                created_at = datetime.strptime(event['created_at'], '%Y-%m-%dT%H:%M:%SZ')
                 repo_name = event['repo']['name']
-                # The event timestamp is when the push happened
-                timestamp_str = event['created_at']
-                timestamp = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%SZ")
-                
-                for commit in event['payload'].get('commits', []):
-                    # We grab the first line of the commit message
-                    msg = commit['message'].splitlines()[0]
-                    sha = commit['sha']
-                    
-                    new_commit = GitHubCommit(
+
+                # Use 'head' as the commit SHA
+                commit_sha = event['payload'].get('head')
+
+                if commit_sha:
+                    # Construct the URL using the repo name provided in the event
+                    commit_url = f"https://api.github.com/repos/{repo_name}/commits/{commit_sha}"
+                    commit_res = requests.get(commit_url, headers=headers)
+                    if commit_res.status_code == 200:
+                        commit_data = commit_res.json()
+
+                        # commit.polarity = sentiment.polarity # Range: [-1.0, 1.0]
+                        # commit.subjectivity = sentiment.subjectivity # Range: [0.0, 1.0]
+
+                    results.append(GitHubCommit(
                         repo=repo_name,
-                        sha=sha,
-                        timestamp=timestamp,
-                        message=msg,
+                        sha=commit_sha,
+                        timestamp=created_at,
+                        message=commit_data['commit']['message'].splitlines()[0],
                         polarity=None,
                         subjectivity=None
-                    )
-                    new_commit.set_sentiment_analysis()
-                    results.append(new_commit)
+                                            ))
+
+                    # Assign polarity and subjectivity
+                    results[-1].set_sentiment_analysis()
+
+                else:
+                    # TODO: Evaluate how to properly handle this
+                    print(f"Could not fetch commit details for {repo_name}")
+
+    print(results)
                     
     return results
 
