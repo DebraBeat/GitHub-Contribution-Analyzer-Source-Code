@@ -14,6 +14,7 @@ tool_choice = st.selectbox(
         "Activity Histograms (Time/Day)",
         "Word Cloud (Commit Messages)",
         "Top Users Bar Chart (Repo)",
+        "Contribution Line Chart (Repo)",
         "Sentiment Scatter Plot",
         "Machine Learning: Decision Tree"
     ]
@@ -55,10 +56,16 @@ if st.button("Generate Analysis"):
                         fig = plots.generate_top_users_barchart(repo_url)
                         st.pyplot(fig)
 
-                        # ... other elif blocks ...
                 elif tool_choice == "Machine Learning: Decision Tree":
                     fig = plots.generate_decision_tree(username)
                     st.pyplot(fig)
+
+                elif tool_choice == "Contribution Line Chart (Repo)":
+                    if "github.com" not in repo_url or len(repo_url.split('/')) < 4:
+                        st.error("The Line Chart requires a full repository URL (e.g., https://github.com/user/repo).")
+                    else:
+                        fig = plots.generate_line_chart(repo_url)
+                        st.pyplot(fig)
                         
             except ValueError as ve:
                 # This catches the errors we set up in plots.py (like "No recent activity found")

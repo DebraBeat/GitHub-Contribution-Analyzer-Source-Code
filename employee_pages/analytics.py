@@ -44,8 +44,10 @@ try:
             
             # Group tools that require a personal GitHub username
             user_specific_tools = [
-                "Activity Histograms (Time/Day)", 
-                "Word Cloud (Commit Messages)", 
+                "Activity Histograms (Time/Day)",
+                "Word Cloud (Commit Messages)",
+                "Top Users Bar Chart (Repo)",
+                "Contribution Line Chart (Repo)",
                 "Sentiment Scatter Plot",
                 "Machine Learning: Decision Tree"
             ]
@@ -73,9 +75,13 @@ try:
                             # This one uses the Repo URL, not the individual user!
                             fig = plots.generate_top_users_barchart(repo_url)
                             st.pyplot(fig)
-                            
+
                         elif tool_choice == "Machine Learning: Decision Tree":
                             fig = plots.generate_decision_tree(github_username)
+                            st.pyplot(fig)
+
+                        elif tool_choice == "Contribution Line Chart (Repo)":
+                            fig = plots.generate_line_chart(repo_url)
                             st.pyplot(fig)
                             
                     except Exception as e:

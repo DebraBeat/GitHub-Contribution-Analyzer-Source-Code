@@ -140,7 +140,7 @@ def get_repo_contributor_stats(owner: str, repo: str) -> pd.DataFrame:
     
     # GitHub often returns 202 Accepted while it compiles these stats in the background.
     if response.status_code == 202:
-        raise Exception("GitHub is compiling these statistics. Please try again in a few seconds.")
+        raise Exception("GitHub took too long to compile statistics. Please try again later.")
     elif response.status_code != 200:
         raise Exception(f"Failed to fetch repo stats: {response.status_code}")
         

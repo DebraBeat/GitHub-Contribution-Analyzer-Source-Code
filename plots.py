@@ -203,3 +203,52 @@ def generate_decision_tree(username: str) -> plt.Figure:
     
     fig.tight_layout()
     return fig
+
+# --- 6. CONTRIBUTION LINE CHART (REPO) ---
+def generate_line_chart(repo_url: str) -> plt.Figure:
+    """Generates a line chart showing commits over the last 52 weeks for a repo."""
+    try:
+        url_type, owner, repo = git_parser.parse_github_url(repo_url)
+        if url_type != "repo":
+            raise ValueError("Please provide a valid repository URL.")
+    except Exception as e:
+        raise ValueError(f"Error parsing URL: {e}")
+
+    # Hit the specific GitHub endpoint for repository commit activity
+    url = f"https://api.github.com/repos/{owner}/{repo}/stats/commit_activity"
+    response = requests.get(url, headers=git_parser.HEADERS)
+    
+    # GitHub returns 202 if it needs to calculate this data in the background
+    if response.status_code == 202:
+        raise Exception("GitHub is compiling these statistics. Please click 'Generate' again in a few seconds.")
+    elif response.status_code != 200:
+        raise Exception(f"Failed to fetch repo stats ({response.status_code}): {response.text}")
+
+    data = response.json()
+    if not data:
+        raise ValueError("No commit activity found for this repository.")
+
+    # Extract the weeks (Unix timestamps) and totals
+    weeks = []
+    totals = []
+    for week_data in data:
+        week_date = datetime.fromtimestamp(week_data['week'])
+        weeks.append(week_date)
+        totals.append(week_data['total'])
+
+    # Draw the Line Chart
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sns.lineplot(x=weeks, y=totals, ax=ax, marker="o", color="#238636", linewidth=2)
+    
+    # Add a nice shaded area under the line
+    ax.fill_between(weeks, totals, color="#238636", alpha=0.2)
+
+    # Formatting
+    ax.set_title(f"Yearly Commit Activity for {repo}", fontsize=16)
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Total Commits per Week")
+    ax.grid(True, linestyle="--", alpha=0.5)
+    ax.tick_params(axis='x', rotation=45)
+    
+    fig.tight_layout()
+    return fig
